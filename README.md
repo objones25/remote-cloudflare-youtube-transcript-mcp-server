@@ -2,38 +2,119 @@
 
 A high-performance, serverless implementation of a YouTube transcript extraction service using the Model Context Protocol (MCP), deployed on Cloudflare Workers.
 
-**Live API Endpoint:** [https://youtube-transcript-mcp-server.ap-a98.workers.dev](https://youtube-transcript-mcp-server.ap-a98.workers.dev)
+## Overview
 
-## Architecture
+This MCP server enables AI assistants to retrieve transcripts from YouTube videos through a simple API. The implementation combines the lightweight transcript extraction capabilities seen in [kimtaeyoon83/mcp-server-youtube-transcript](https://github.com/kimtaeyoon83/mcp-server-youtube-transcript) with the remote MCP server architecture from [Cloudflare AI demos](https://github.com/cloudflare/ai/tree/main/demos/remote-mcp-server).
 
-This implementation follows a minimalist, edge-optimized architecture leveraging Cloudflare Workers for maximum performance:
+## Features
 
-- **Serverless Execution**: Runs on Cloudflare's global edge network
-- **MCP Protocol**: Implements the Model Context Protocol for standardized tool interactions
-- **Dual Transport**: Supports both SSE streaming and direct JSON-RPC API calls
-- **Optimized Response Times**: Typically 400-800ms response times
+- **Serverless Deployment**: Runs on Cloudflare's global edge network for minimal latency
+- **YouTube URL Flexibility**: Supports multiple URL formats and direct video IDs
+- **Language Selection**: Retrieve transcripts in different languages (defaults to English)
+- **Edge-optimized**: Ultra-fast response times (typically 400-800ms)
+- **Minimal Implementation**: Less than 300 lines of code for easy maintenance
+- **SSE Transport**: Implements Server-Sent Events for streaming connections
 
-## Key Components
+## Available Tools
 
-The server is built with a minimal, high-efficiency codebase (<300 lines):
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `get_transcript` | Extract transcripts from YouTube videos | `url` (required): YouTube video URL or ID<br>`lang` (optional, default: "en"): Language code |
 
-1. **YouTubeTranscriptExtractor**: Core functionality for parsing YouTube URLs and fetching transcripts
-2. **TranscriptServer**: MCP protocol implementation with SSE transport
-3. **CloudflareResponseAdapter**: Bridge between Cloudflare's streams and Node.js-style response handling
+## Usage with Claude Desktop
+
+### Installation
+
+1. Open Claude Desktop and go to Settings > Developer > Edit Config
+2. Update your configuration file:
+
+```json
+{
+  "mcpServers": {
+    "youtube-transcript": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://your-deployed-worker.workers.dev/sse"
+      ]
+    }
+  }
+}
+```
+
+3. Restart Claude Desktop
+
+### Example Prompts
+
+```
+Can you show me the transcript of this YouTube video? https://www.youtube.com/watch?v=dQw4w9WgXcQ
+```
+
+```
+Extract the transcripts from this TED talk and summarize the key points: https://youtu.be/8S0FDjFBj8o
+```
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 18 or higher
+- Wrangler CLI (`npm install -g wrangler`)
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/youtube-transcript-mcp-server.git
+cd youtube-transcript-mcp-server
+
+# Install dependencies
+npm install
+
+# Run locally
+wrangler dev
+```
+
+### Testing with MCP Inspector
+
+1. Install the MCP Inspector:
+   ```bash
+   npx @modelcontextprotocol/inspector
+   ```
+
+2. In the inspector:
+   - Set Transport Type to `SSE`
+   - Enter `http://localhost:8787/sse` as the URL
+   - Click "Connect"
+
+3. Try out the `get_transcript` tool with different YouTube URLs
+
+## Deployment to Cloudflare
+
+```bash
+# Deploy to Cloudflare Workers
+wrangler deploy
+```
 
 ## Technical Implementation
 
-- **Transport Layer**: Uses SSEServerTransport instead of StdioServerTransport for HTTP-based operations
-- **Streaming Support**: Implements Server-Sent Events (SSE) for stateful streaming connections
-- **RPC Interface**: Direct JSON-RPC API for simple, stateless requests
-- **Error Handling**: Comprehensive error handling with proper HTTP status codes
+The server is built with a minimal, high-efficiency codebase:
 
-## Usage Examples
+- **YouTubeTranscriptMCPSqlite**: Core MCP agent implementation with transcript extraction capabilities
+- **McpServer**: Handles MCP protocol interactions
+- **MCP Protocol Integration**: Complete implementation of the Model Context Protocol 
 
-### JSON-RPC Direct Call
+### Key optimizations:
+
+1. Efficient URL parsing and validation
+2. Minimal external dependencies
+3. Proper error handling with detailed error messages
+4. Streaming support through SSE
+
+## JSON-RPC Direct Call Example
 
 ```bash
-curl -X POST "https://youtube-transcript-mcp-server.ap-a98.workers.dev" \
+curl -X POST "https://your-deployed-worker.workers.dev" \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0", 
@@ -42,80 +123,28 @@ curl -X POST "https://youtube-transcript-mcp-server.ap-a98.workers.dev" \
     "params": {
       "name": "get_transcript",
       "arguments": {
-        "url": "https://www.youtube.com/watch?v=Ek8JHgZtmcI",
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
         "lang": "en"
       }
     }
   }'
 ```
 
-### SSE Streaming Connection
+## Future Enhancements
 
-For applications that need a streaming connection:
-
-```javascript
-// Client-side JavaScript
-const eventSource = new EventSource('https://youtube-transcript-mcp-server.ap-a98.workers.dev');
-eventSource.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  // Process message
-};
-
-// Send initial message
-fetch('https://youtube-transcript-mcp-server.ap-a98.workers.dev', {
-  method: 'POST',
-  headers: { 'Accept': 'text/event-stream' },
-  body: JSON.stringify({
-    jsonrpc: '2.0',
-    id: '1',
-    method: 'call_tool',
-    params: {
-      name: 'get_transcript',
-      arguments: {
-        url: 'https://www.youtube.com/watch?v=Ek8JHgZtmcI',
-        lang: 'en'
-      }
-    }
-  })
-});
-```
-
-## Performance Characteristics
-
-- **Cold Start**: Minimal cold start times (~50ms) due to optimized code footprint
-- **Transcript Processing**: Typical processing time of 400-800ms
-- **Scalability**: Scales automatically with Cloudflare's infrastructure
-- **Global Availability**: Deployed on Cloudflare's global edge network for low-latency access
-
-## Implementation Details
-
-The server leverages several optimizations to maintain high performance:
-
-1. **Minimalist Code Structure**: <300 lines total implementation
-2. **Edge-Optimized Patterns**: Uses TransformStream for efficient streaming
-3. **Node.js Compatibility Mode**: Uses Cloudflare's nodejs_compat flag for library support
-4. **Efficient Error Handling**: Quick fail paths with appropriate error codes
-
-## Potential Enhancements
-
-- Add caching layer to improve performance for frequently requested videos
-- Implement transcript segmentation for very long videos
-- Add support for additional languages with auto-detection
-- Add request rate limiting and access controls
-
-## Development and Deployment
-
-Built for and deployed on Cloudflare Workers using:
-
-```bash
-# Development
-wrangler dev
-
-# Deployment
-wrangler deploy
-```
+- Add caching layer for frequently requested transcripts
+- Implement automatic language detection
+- Add support for transcript chapters and timestamps
+- Implement authentication and rate limiting
 
 ## Credits
 
+- Built with [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/sdk)
 - Uses [youtube-captions-scraper](https://github.com/algolia/youtube-captions-scraper) for transcript extraction
-- Built with [@modelcontextprotocol/sdk](https://github.com/remoteprompt/modelcontextprotocol) 
+- Inspired by:
+  - [kimtaeyoon83/mcp-server-youtube-transcript](https://github.com/kimtaeyoon83/mcp-server-youtube-transcript)
+  - [Cloudflare AI Remote MCP Server demo](https://github.com/cloudflare/ai/tree/main/demos/remote-mcp-server)
+
+## License
+
+MIT 
