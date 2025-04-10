@@ -56,8 +56,6 @@ export class YouTubeTranscriptMCPSqlite extends McpAgent<Env> {
   }
 
   async init() {
-    console.error("YouTubeTranscriptMCPSqlite.init() called");
-    
     // Register the getTranscript tool
     this.server.tool(
       "get_transcript", 
@@ -68,7 +66,6 @@ export class YouTubeTranscriptMCPSqlite extends McpAgent<Env> {
       async ({ url, lang }) => {
         try {
           const videoId = this.extractYoutubeId(url);
-          console.error(`Processing transcript for video: ${videoId}`);
           
           const transcript = await getSubtitles({
             videoID: videoId,
@@ -76,7 +73,6 @@ export class YouTubeTranscriptMCPSqlite extends McpAgent<Env> {
           });
           
           const formattedTranscript = this.formatTranscript(transcript);
-          console.error(`Successfully extracted transcript (${formattedTranscript.length} chars)`);
           
           return {
             content: [{
@@ -121,8 +117,6 @@ const handler = YouTubeTranscriptMCPSqlite.mount('/sse', {
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     try {
-      console.error(`Request received: ${request.method} ${new URL(request.url).pathname}`);
-      
       // Handle basic HTTP requests
       const url = new URL(request.url);
       if (request.method === 'GET' && url.pathname === '/') {
