@@ -111,32 +111,6 @@ The server is built with a minimal, high-efficiency codebase:
 3. Proper error handling with detailed error messages
 4. Streaming support through SSE
 
-## JSON-RPC Direct Call Example
-
-```bash
-curl -X POST "https://your-deployed-worker.workers.dev" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0", 
-    "id": "1",
-    "method": "call_tool",
-    "params": {
-      "name": "get_transcript",
-      "arguments": {
-        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "lang": "en"
-      }
-    }
-  }'
-```
-
-## Future Enhancements
-
-- Add caching layer for frequently requested transcripts
-- Implement automatic language detection
-- Add support for transcript chapters and timestamps
-- Implement authentication and rate limiting
-
 ## Credits
 
 - Built with [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/sdk)
