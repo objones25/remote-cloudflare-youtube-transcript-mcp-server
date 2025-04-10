@@ -18,6 +18,7 @@
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.9.0",
+		"agents": "^0.0.59",
 		"hono": "^4.7.6",
 		"youtube-captions-scraper": "^2.0.3"
 	}
